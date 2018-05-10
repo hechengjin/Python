@@ -20,7 +20,8 @@ def get_video_page_urls():
     for a in soup.select('div.CM-video-list-three li a[node-type]'):
         sortNum +=1;
         curTime = str(time.time()).replace('.', '')+ '0'
-        logger.debug("INSERT INTO comm_record_test(class_id,sort_num,title,label,relative_path,file_size,file_type,content_html,content_plain,status,modify_time,create_time) VALUES (10," + str(sortNum) +",'"+ a.text + "','','" + a.attrs.get('href') +"',1000,'WEB','','',0,"+curTime+","+curTime+")")
+        # logger.debug("INSERT INTO comm_record_test(class_id,sort_num,title,label,relative_path,file_size,file_type,content_html,content_plain,status,modify_time,create_time) VALUES (10," + str(sortNum) +",'"+ a.text + "','','" + a.attrs.get('href') +"',1000,'WEB','','',0,"+curTime+","+curTime+")")
+        logger.debug("[url=" + a.attrs.get('href') + "]" + a.text + "[/url]")
 
 def GetHtml( url):
     page = urllib.urlopen(url)
