@@ -10,10 +10,33 @@ from config import *
 
 import xlrd
 import xlwt
+import os,sys
 
-file = 'orders.xls'
+file = os.path.dirname(os.path.realpath(__file__))+'\orders.xls'
 row_list = []
 res_list = []
+
+class OrderObj(object):
+    # 初始化中给对象属性赋值
+    def __init__(self,taobaoId , maogujieId):
+        self.taobaoId = taobaoId
+        self.maogujieId = maogujieId
+        self._i = 0
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if self._i == 0:
+            self._i += 1
+            return self.taobaoId
+        elif self._i == 1:
+            self._i += 1
+            return self.maogujieId
+        else:
+            raise StopIteration()
+
+
 
 
 def read_excel():
@@ -30,8 +53,8 @@ def read_excel():
 
     # 获取各行数据
     for i in range(1, nrows):
-        row_data = sheet1.row(i)[0].value
-        row_list.append(row_data)
+        orderObj = OrderObj(sheet1.row(i)[0].value, sheet1.row(i)[1].value)
+        row_list.append(orderObj)
 
 #设置表格样式
 def set_style(name,height,bold=False):
@@ -48,15 +71,18 @@ def set_style(name,height,bold=False):
 def write_excel():
     f = xlwt.Workbook()
     sheet1 = f.add_sheet('结果',cell_overwrite_ok=True)
-    row0 = ["订单ID","物流"]
+    row0 = ["淘宝订单ID","蘑菇街订单ID","物流超链接","物流信息"]
     #写第一行
     for i in range(0,len(row0)):
         sheet1.write(0,i,row0[i],set_style('Times New Roman',220,True))
     #写数据
     for i in range(0, len(res_list)):
-        sheet1.write(i+1, 0, row_list[i])
-        sheet1.write(i+1, 1, res_list[i])
-    f.save('orders_res.xls')
+        sheet1.write(i + 1, 0, row_list[i].taobaoId)
+        sheet1.write(i+1, 1, row_list[i].maogujieId)
+        link = 'HYPERLINK("https://sellerorder.mogu.com/pc/trade/order/detail/detail4seller?orderId=%s";"%s")' % (row_list[i].maogujieId, res_list[i])
+        sheet1.write(i + 1, 2, xlwt.Formula(link))
+        sheet1.write(i+1, 3, res_list[i])
+    f.save(os.path.dirname(os.path.realpath(__file__))+'\orders_res.xls')
 
 async def taobao_login(username, password, url):
     """
@@ -150,7 +176,7 @@ async def taobao_login(username, password, url):
     #await page.evaluate('''document.querySelector(".search-mod__order-search-button___1q3E0").click()''')
     #await page.evaluate(        '''document.querySelector(".search-mod__order-search-input___29Ui1").value="''' + ORDER_QUERY + '''"''')
     for i in range(0, len(row_list)):
-        ORDER_QUERY = row_list[i]
+        ORDER_QUERY = row_list[i].taobaoId
         # 在搜索框中输入ORDER_QUERY
         await page.waitForSelector('input.search-mod__order-search-input___29Ui1')
         await page.evaluate(
@@ -173,21 +199,26 @@ async def taobao_login(username, password, url):
                     await page.hover('#viewLogistic')  # 模拟鼠标划 查看物流 加载出物流信息
                     # await asyncio.sleep(2)
                     await page.waitFor(20)
-                    await page.waitForSelector('.logistics-info-mod__header___r5tzb')
-                    wuliustatInfo1 = await page.evaluate(
-                        '''document.querySelector(".logistics-info-mod__header___r5tzb span:nth-child(1)").innerHTML''')
-                    wuliustatInfo2 = await page.evaluate(
-                        '''document.querySelector(".logistics-info-mod__header___r5tzb span:nth-child(2)").innerHTML''')
-                    wuliustatInfo3 = await page.evaluate(
-                        '''document.querySelector(".logistics-info-mod__header___r5tzb span:nth-child(3)").innerHTML''')
-                    wuliustatInfo = wuliustatInfo1 + wuliustatInfo2 + wuliustatInfo3
-                    print(wuliustatInfo)
-                    res_list.append(wuliustatInfo)
-                    # wuliustatInfoHtml = await page.Jeval('.logistics-info-mod__header___r5tzb', 'node => node.innerHTML')
+                    await page.mouse.move(2000, 0, {'delay': random.randint(1000, 2000)})
+                    existWLINFO = await page.waitForSelector('.logistics-info-mod__header___r5tzb')
+                    if existWLINFO:
+                        wuliustatInfo1 = await page.evaluate(
+                            '''document.querySelector(".logistics-info-mod__header___r5tzb span:nth-child(1)").innerHTML''')
+                        wuliustatInfo2 = await page.evaluate(
+                            '''document.querySelector(".logistics-info-mod__header___r5tzb span:nth-child(2)").innerHTML''')
+                        wuliustatInfo3 = await page.evaluate(
+                            '''document.querySelector(".logistics-info-mod__header___r5tzb span:nth-child(3)").innerHTML''')
+                        wuliustatInfo = wuliustatInfo1 + wuliustatInfo2 + wuliustatInfo3
+                        print(wuliustatInfo)
+                        res_list.append(wuliustatInfo)
+                        # wuliustatInfoHtml = await page.Jeval('.logistics-info-mod__header___r5tzb', 'node => node.innerHTML')
+                    else:
+                        print(e, ':物流信息已签收')
+                        res_list.append('已收')
 
                 except Exception as e:
                     print(e, ':查看物流信息失败')
-                    res_list.append('无')
+                    res_list.append('已收')
             else:
                 print("没有查看物流")
                 res_list.append('无')
