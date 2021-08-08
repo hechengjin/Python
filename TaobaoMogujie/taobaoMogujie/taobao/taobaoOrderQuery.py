@@ -81,7 +81,12 @@ def write_excel():
         sheet1.write(i+1, 1, row_list[i].maogujieId)
         link = 'HYPERLINK("https://sellerorder.mogu.com/pc/trade/order/detail/detail4seller?orderId=%s";"%s")' % (row_list[i].maogujieId, res_list[i])
         sheet1.write(i + 1, 2, xlwt.Formula(link))
-        sheet1.write(i+1, 3, res_list[i])
+        wlxx = res_list[i]
+        wlorders = wlxx.split('：')
+        orderId = ''
+        if len(wlorders) >= 2:
+            orderId = wlorders[1]
+        sheet1.write(i+1, 3, orderId)
     f.save(os.path.dirname(os.path.realpath(__file__))+'\orders_res.xls')
 
 async def taobao_login(username, password, url):

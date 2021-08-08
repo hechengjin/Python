@@ -52,6 +52,21 @@ def write_excel():
         sheet1.write(i+1, 1, res_list[i])
     f.save('orders_res.xls')
 
+def test_split():
+    path='圆通速递：M00072587031'
+    path1 = path.split('：')
+    if len(path1) >= 2:
+        print('path1:', path1[1])
+    path = '已收'
+    path1 = path.split('：')
+    if len(path1)>=2:
+        print('path1:', path1[1])
+    path = '无'
+    path1 = path.split('：')
+    if len(path1) >= 2:
+        print('path1:', path1[1])
+
 if __name__ == '__main__':
-    read_excel()
-    write_excel()
+    #read_excel()
+    #write_excel()
+    test_split()
